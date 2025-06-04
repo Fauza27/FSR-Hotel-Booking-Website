@@ -107,6 +107,95 @@ class Room {
         // Mengembalikan hasil query berupa gambar yang terkait dengan kamar
         return $this->db->resultSet();
     }
+
+    public function addRoom($data) {
+        $this->db->query("INSERT INTO rooms (room_number, category_id, price_per_night, capacity, size_sqm, description, status, image_url) 
+                          VALUES (:room_number, :category_id, :price_per_night, :capacity, :size_sqm, :description, :status, :image_url)");
+        
+        $this->db->bind(':room_number', $data['room_number']);
+        $this->db->bind(':category_id', $data['category_id']);
+        $this->db->bind(':price_per_night', $data['price_per_night']);
+        $this->db->bind(':capacity', $data['capacity']);
+        $this->db->bind(':size_sqm', $data['size_sqm']);
+        $this->db->bind(':description', $data['description']);
+        $this->db->bind(':status', $data['status']);
+        // Untuk image_url di tabel rooms, kita bisa simpan gambar utama atau biarkan null jika gambar dikelola di room_images
+        // Untuk saat ini, kita asumsikan gambar utama disimpan di room_images dan ini bisa NULL atau path ke gambar utama pertama
+        $this->db->bind(':image_url', $data['primary_image_path'] ?? null); 
+
+        if ($this->db->execute()) {
+            return $this->db->lastInsertId(); // Mengembalikan ID kamar yang baru saja ditambahkan
+        } else {
+            return false;
+        }
+    }
+
+    public function addRoomFacilities($roomId, $facilityIds) {
+        if (empty($facilityIds)) {
+            return true; // Tidak ada fasilitas untuk ditambahkan
+        }
+        // Hapus fasilitas lama jika ada (berguna untuk update, tapi untuk create bisa diskip jika pasti belum ada)
+        // $this->db->query("DELETE FROM room_facilities WHERE room_id = :room_id");
+        // $this->db->bind(':room_id', $roomId);
+        // $this->db->execute();
+
+        $this->db->beginTransaction(); // Mulai transaksi
+        try {
+            foreach ($facilityIds as $facilityId) {
+                $this->db->query("INSERT INTO room_facilities (room_id, facility_id) VALUES (:room_id, :facility_id)");
+                $this->db->bind(':room_id', $roomId);
+                $this->db->bind(':facility_id', $facilityId);
+                if (!$this->db->execute()) {
+                    throw new Exception("Gagal menambahkan fasilitas ID: " . $facilityId);
+                }
+            }
+            $this->db->endTransaction(); // Commit transaksi
+            return true;
+        } catch (Exception $e) {
+            $this->db->cancelTransaction(); // Rollback jika ada error
+            error_log("Error adding room facilities: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function addRoomImage($roomId, $imageUrl, $isPrimary = 0) {
+        $this->db->query("INSERT INTO room_images (room_id, image_url, is_primary) VALUES (:room_id, :image_url, :is_primary)");
+        $this->db->bind(':room_id', $roomId);
+        $this->db->bind(':image_url', $imageUrl); // Ini adalah path relatif dari APP_URL
+        $this->db->bind(':is_primary', $isPrimary);
+        return $this->db->execute();
+    }
+
+    public function deleteRoom($roomId) {
+        $this->db->beginTransaction();
+        try {
+            // Hapus dari tabel junction dulu
+            $this->db->query("DELETE FROM room_facilities WHERE room_id = :room_id");
+            $this->db->bind(':room_id', $roomId);
+            $this->db->execute();
+
+            $this->db->query("DELETE FROM room_images WHERE room_id = :room_id");
+            $this->db->bind(':room_id', $roomId);
+            $this->db->execute();
+            
+            // Hapus dari tabel bookings (jika diperlukan, tergantung aturan bisnis, atau set ON DELETE CASCADE)
+            // $this->db->query("DELETE FROM bookings WHERE room_id = :room_id");
+            // $this->db->bind(':room_id', $roomId);
+            // $this->db->execute();
+
+            // Akhirnya hapus kamar
+            $this->db->query("DELETE FROM rooms WHERE room_id = :room_id");
+            $this->db->bind(':room_id', $roomId);
+            $this->db->execute();
+
+            $this->db->endTransaction();
+            return true;
+        } catch (Exception $e) {
+            $this->db->cancelTransaction();
+            error_log("Error deleting room: " . $e->getMessage());
+            return false;
+        }
+    }
     
     // Mengecek ketersediaan kamar berdasarkan tanggal check-in dan check-out
     public function checkAvailability($roomId, $checkIn, $checkOut) {
