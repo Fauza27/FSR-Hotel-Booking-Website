@@ -45,29 +45,29 @@ class AdminController {
     public function login() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Hardcoded admin bypass (check raw POST first, then trim)
-            if (isset($_POST['username'], $_POST['password']) && $_POST['username'] === 'admin10' && $_POST['password'] === 'admin1234') {
-                $_SESSION['admin_id'] = -10;
-                $_SESSION['admin_username'] = 'admin10';
-                $_SESSION['admin_role'] = 'superadmin';
-                $_SESSION['admin_name'] = 'Super Admin';
-                $_SESSION['admin_email'] = 'admin10@example.com';
-                $_SESSION['admin_debug'] = 'hardcoded';
-                header('Location: /admin');
-                exit;
-            }
+            // if (isset($_POST['username'], $_POST['password']) && $_POST['username'] === 'admin10' && $_POST['password'] === 'admin1234') {
+            //     $_SESSION['admin_id'] = -10;
+            //     $_SESSION['admin_username'] = 'admin10';
+            //     $_SESSION['admin_role'] = 'superadmin';
+            //     $_SESSION['admin_name'] = 'Super Admin';
+            //     $_SESSION['admin_email'] = 'admin10@example.com';
+            //     $_SESSION['admin_debug'] = 'hardcoded';
+            //     header('Location: /admin');
+            //     exit;
+            // }
             $username = trim($_POST['username']);
             $password = trim($_POST['password']);
             // Hardcoded admin bypass (after trim, just in case)
-            if ($username === 'admin10' && $password === 'admin1234') {
-                $_SESSION['admin_id'] = -10;
-                $_SESSION['admin_username'] = 'admin10';
-                $_SESSION['admin_role'] = 'superadmin';
-                $_SESSION['admin_name'] = 'Super Admin';
-                $_SESSION['admin_email'] = 'admin10@example.com';
-                $_SESSION['admin_debug'] = 'hardcoded-trim';
-                header('Location: /admin');
-                exit;
-            }
+            // if ($username === 'admin10' && $password === 'admin1234') {
+            //     $_SESSION['admin_id'] = -10;
+            //     $_SESSION['admin_username'] = 'admin10';
+            //     $_SESSION['admin_role'] = 'superadmin';
+            //     $_SESSION['admin_name'] = 'Super Admin';
+            //     $_SESSION['admin_email'] = 'admin10@example.com';
+            //     $_SESSION['admin_debug'] = 'hardcoded-trim';
+            //     header('Location: /admin');
+            //     exit;
+            // }
             if ($this->adminModel->login($username, $password)) {
                 $_SESSION['admin_id'] = (int)$this->adminModel->getAdminId();
                 $_SESSION['admin_username'] = $this->adminModel->getUsername();
@@ -86,14 +86,34 @@ class AdminController {
         if (isset($_SESSION['admin_debug'])) {
             $data['admin_debug'] = $_SESSION['admin_debug'];
         }
-        $this->view('admin/auth/login', $data);
+        $this->loadLoginView($data);
     }
     
     // Logout Admin
     public function logout() {
-        session_destroy();
-        header('Location: /admin/login');
+        unset($_SESSION['admin_id']);
+        unset($_SESSION['admin_username']);
+        unset($_SESSION['admin_email']);
+        unset($_SESSION['admin_name']);
+        $_SESSION['flash_message'] = 'You have been logged out';
+        $_SESSION['flash_type'] = 'success';
+        
+        // Redirect to login page
+        header('Location: ' . APP_URL . '/login');
         exit;
+    }
+
+    private function loadView($data) {
+        $pageTitle = 'Register';
+        
+        require_once(VIEW_PATH . 'auth/register.php');
+    }
+    
+    // Load login view
+    private function loadLoginView($data) {
+        $pageTitle = 'Login';
+        
+        require_once(VIEW_PATH . 'auth/login.php');
     }
     
     // Manajemen Kamar
