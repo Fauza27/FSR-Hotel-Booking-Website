@@ -176,6 +176,7 @@ $routes = [
     'admin/dashboard' => ['AdminController', 'dashboard'],    // Admin room management
     'admin/rooms' => ['AdminRoomController', 'index'],
     'admin/rooms/create' => ['AdminRoomController', 'create'],
+    'admin/rooms/store' => ['AdminRoomController', 'store'],
     'admin/rooms/edit/(\d+)' => ['AdminRoomController', 'edit'],
     'admin/rooms/update/(\d+)' => ['AdminRoomController', 'update'],
     //'admin/rooms/update/([0-9]+)' => ['AdminRoomController', 'view'],
@@ -206,7 +207,9 @@ $routes = [
     // Admin facility management
     'admin/facilities' => ['AdminFacilityController', 'index'],
     'admin/facilities/create' => ['AdminFacilityController', 'create'],
+    'admin/facilities/store' => ['AdminFacilityController', 'store'],
     'admin/facilities/edit/(\d+)' => ['AdminFacilityController', 'edit'],
+    'admin/facilities/update/(\d+)' => ['AdminFacilityController', 'update'],
     'admin/facilities/delete/(\d+)' => ['AdminFacilityController', 'delete'],
 
     // Admin payment management
