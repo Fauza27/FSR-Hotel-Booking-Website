@@ -32,10 +32,10 @@ require VIEW_PATH . 'admin/layouts/header.php';
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-primary w-100">Tampilkan</button>
                 </div>
-                <div class="col-md-2 d-flex flex-column">
+                <!-- <div class="col-md-2 d-flex flex-column">
                     <a href="<?= APP_URL ?>/admin/reports/export/excel/revenue?<?= http_build_query(array_merge($_GET, ['period' => $_GET['period'] ?? 'all'])) ?>" class="btn btn-success mb-1 btn-sm">Export Excel</a>
                     <a href="<?= APP_URL ?>/admin/reports/export/pdf/revenue?<?= http_build_query(array_merge($_GET, ['period' => $_GET['period'] ?? 'all'])) ?>" class="btn btn-danger btn-sm">Export PDF</a>
-                </div>
+                </div> -->
             </form>
 
             <?php
