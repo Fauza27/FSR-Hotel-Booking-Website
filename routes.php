@@ -171,8 +171,8 @@ $routes = [
 
     // Admin routes
     'admin' => ['AdminController', 'index'],
-    'admin/login' => ['AuthController', 'login'],
-    'admin/logout' => ['AdminController', 'logout'],
+    'admin/login' => ['AdminController', 'login'],
+    'admin/logout' => ['AdminController', 'login'],
     'admin/dashboard' => ['AdminController', 'dashboard'],    // Admin room management
     'admin/rooms' => ['AdminRoomController', 'index'],
     'admin/rooms/create' => ['AdminRoomController', 'create'],
@@ -219,4 +219,5 @@ $routes = [
     'admin/reports/bookings' => ['AdminReportController', 'bookings'],
     'admin/reports/revenue' => ['AdminReportController', 'revenue'],
     'admin/reports/rooms' => ['AdminReportController', 'rooms'],
+    'admin/reports/export/(\w+)/(\w+)' => ['AdminReportController', 'export'],
 ];
