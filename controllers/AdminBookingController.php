@@ -53,36 +53,46 @@ class AdminBookingController {
 }
 
     // Update status booking (confirmed/cancelled)
-    public function updateStatus($id) {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $status = $_POST['status'] ?? '';
-            if ($status && in_array($status, ['confirmed', 'cancelled', 'pending'])) {
-                $this->bookingModel->updateBookingStatus($id, $status);
-                // Jika cancelled, update status kamar ke available
-                if ($status === 'cancelled') {
-                    $booking = $this->bookingModel->getBookingDetailsById($id);
-                    if ($booking && isset($booking['room_id'])) {
-                        $this->roomModel->updateRoomStatus($booking['room_id'], 'available');
-                    }
-                }
-                $_SESSION['success'] = 'Status booking berhasil diperbarui';
+    public function updateStatus($id) { // $id akan diisi oleh router dari path URL
+        $status = $_GET['status'] ?? ''; // Ambil status baru dari query string
+
+        if ($id && $status && in_array($status, ['confirmed', 'cancelled', 'pending', 'completed'])) {
+            $success = $this->bookingModel->updateBookingStatus($id, $status);
+            
+            // Model Booking->updateBookingStatus sudah menangani update status kamar.
+            // Jadi, tidak perlu logika update status kamar di sini lagi.
+
+            if ($success) {
+                $_SESSION['success'] = 'Status booking #' . $id . ' berhasil diperbarui menjadi ' . ucfirst($status) . '.';
             } else {
-                $_SESSION['error'] = 'Status tidak valid';
+                $_SESSION['error'] = 'Gagal memperbarui status booking #' . $id . '.';
             }
+        } else {
+            $_SESSION['error'] = 'Data tidak valid untuk pembaruan status booking. ID: '.$id.', Status: '.$status;
         }
-        header('Location: /admin/bookings/view?id=' . $id);
+
+        // Redirect kembali ke halaman daftar booking
+        header('Location: ' . base_url('admin/bookings'));
         exit;
     }
 
     // Batalkan booking dan update status kamar
+    // Metode ini akan dipanggil jika ada route khusus ke admin/bookings/cancel/{id}
+    // Jika semua pembatalan dari index.php menggunakan updateStatus?status=cancelled, maka metode ini mungkin tidak terpakai dari sana.
     public function cancel($id) {
-        $this->bookingModel->updateBookingStatus($id, 'cancelled');
-        $booking = $this->bookingModel->getBookingDetailsById($id);
-        if ($booking && isset($booking['room_id'])) {
-            $this->roomModel->updateRoomStatus($booking['room_id'], 'available');
+        if ($id) {
+            $success = $this->bookingModel->updateBookingStatus($id, 'cancelled');
+            // Model Booking->updateBookingStatus sudah menangani update status kamar.
+
+            if ($success) {
+                $_SESSION['success'] = 'Booking #' . $id . ' berhasil dibatalkan.';
+            } else {
+                $_SESSION['error'] = 'Gagal membatalkan booking #' . $id . '.';
+            }
+        } else {
+             $_SESSION['error'] = 'ID booking tidak valid untuk pembatalan.';
         }
-        $_SESSION['success'] = 'Booking berhasil dibatalkan';
-        header('Location: /admin/bookings');
+        header('Location: ' . base_url('admin/bookings'));
         exit;
     }
 
