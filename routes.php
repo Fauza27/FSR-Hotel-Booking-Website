@@ -186,8 +186,8 @@ $routes = [
     // Admin booking management
     'admin/bookings' => ['AdminBookingController', 'index'],
     'admin/bookings/view/(\d+)' => ['AdminBookingController', 'view'],
-    'admin/bookings/update-status' => ['AdminBookingController', 'updateStatus'],
-    'admin/bookings/cancel' => ['AdminBookingController', 'cancel'],
+    'admin/bookings/update-status/(\d+)' => ['AdminBookingController', 'updateStatus'],
+    'admin/bookings/cancel/(\d+)' => ['AdminBookingController', 'cancel'],
     
     // Admin user management
     'admin/users' => ['AdminUserController', 'index'],
