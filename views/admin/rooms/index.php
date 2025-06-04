@@ -20,7 +20,7 @@
                 
                 <select name="category" class="form-control">
                     <option value="">Semua Kategori</option>
-                    <?php foreach ($categories as $category_item): // Ganti nama variabel agar tidak konflik ?>
+                    <?php foreach ($categories as $category_item): ?>
                         <option value="<?php echo $category_item->category_id; ?>" 
                             <?php echo (isset($_GET['category']) && $_GET['category'] == $category_item->category_id) ? 'selected' : ''; ?>>
                             <?php echo htmlspecialchars($category_item->name); ?>
@@ -43,7 +43,7 @@
             <thead>
                 <tr>
                     <th>No</th>
-                    <th>Gambar</th>
+                    <!-- <th>Gambar</th> -->
                     <th>Nomor Kamar</th>
                     <th>Kategori</th>
                     <th>Harga / Malam</th>
@@ -58,16 +58,24 @@
                     <?php foreach ($rooms as $room): ?>
                         <tr>
                             <td><?php echo $no++; ?></td>
-                            <td>
-                                <?php 
-                                // Coba ambil gambar utama dari relasi room_images jika kolom image_url di tabel rooms kosong
-                                $imageUrl = $room->primary_image_url ?? ($room->image_url ?? null); // image_url dari join di getAllRooms
-                                if ($imageUrl): ?>
-                                    <img src="<?= base_url($imageUrl) ?>" alt="Gambar Kamar" style="width: 100px; height: auto;">
-                                <?php else: ?>
-                                    Tidak ada gambar
-                                <?php endif; ?>
-                            </td>
+                            <!-- <td>
+                                <?php
+                                $displayImageUrl = null;
+                                // Prioritas 1: Gambar utama dari room_images (jika ada)
+                                if (!empty($room->primary_image_url)) {
+                                    $displayImageUrl = base_url($room->primary_image_url);
+                                }
+                                // Prioritas 2: Gambar dari kolom image_url di tabel rooms (jika primary_image_url tidak ada)
+                                elseif (!empty($room->image_url)) {
+                                    $displayImageUrl = base_url($room->image_url);
+                                }
+                                // Prioritas 3: Placeholder jika tidak ada gambar sama sekali
+                                else {
+                                    $displayImageUrl = base_url('assets/images/room-placeholder.jpg'); // Pastikan path placeholder benar
+                                }
+                                ?>
+                                <img src="<?= $displayImageUrl ?>" alt="Gambar Kamar <?= htmlspecialchars($room->room_number) ?>" style="width: 100px; height: 75px; object-fit: cover;">
+                            </td> -->
                             <td><?php echo htmlspecialchars($room->room_number); ?></td>
                             <td><?php echo htmlspecialchars($room->category_name ?? ''); ?></td>
                             <td>Rp <?php echo number_format($room->price_per_night, 0, ',', '.'); ?></td>
