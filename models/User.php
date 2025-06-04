@@ -226,15 +226,103 @@ class User {
     }
     
     // Get all users (for admin panel)
-    public function getAllUsers() {
-        $this->db->query("SELECT * FROM users ORDER BY created_at DESC");
-        return $this->db->resultSet();
-    }
+    // public function getAllUsers() {
+    //     $this->db->query("SELECT * FROM users ORDER BY created_at DESC");
+    //     return $this->db->resultSet();
+    // }
     
-    // Search users by name or email (for admin panel)
-    public function searchUsers($search) {
-        $this->db->query("SELECT * FROM users WHERE full_name LIKE :search OR email LIKE :search ORDER BY created_at DESC");
-        $this->db->bind(':search', "%$search%");
+    // // Search users by name or email (for admin panel)
+    // public function searchUsers($search) {
+    //     $this->db->query("SELECT * FROM users WHERE full_name LIKE :search OR email LIKE :search ORDER BY created_at DESC");
+    //     $this->db->bind(':search', "%$search%");
+    //     return $this->db->resultSet();
+    // }
+
+    /**
+     * Mengambil daftar pengguna dengan filter dan pagination.
+     * Juga mengambil jumlah total booking per user.
+     *
+     * @param array $filters Filter seperti ['search' => 'keyword', 'role' => 'user']
+     * @param int|null $limit Jumlah item per halaman
+     * @param int|null $offset Offset untuk query
+     * @return array Daftar pengguna
+     */
+    public function getUsers($filters = [], $limit = null, $offset = null) {
+        // Bagian SELECT diubah untuk menyertakan total_booking
+        $sql = "SELECT u.*, (SELECT COUNT(*) FROM bookings b WHERE b.user_id = u.user_id) as total_booking 
+                FROM users u";
+        $params = [];
+        $whereClauses = [];
+
+        if (!empty($filters['search'])) {
+            $whereClauses[] = "(u.full_name LIKE :search OR u.email LIKE :search)";
+            $params[':search'] = "%" . $filters['search'] . "%";
+        }
+
+        if (!empty($filters['role'])) {
+            $whereClauses[] = "u.role = :role";
+            $params[':role'] = $filters['role'];
+        }
+
+        if (!empty($whereClauses)) {
+            $sql .= " WHERE " . implode(" AND ", $whereClauses);
+        }
+
+        $sql .= " ORDER BY u.created_at DESC";
+
+        if ($limit !== null && $offset !== null) {
+            // Pastikan limit dan offset adalah integer
+            $sql .= " LIMIT :limit OFFSET :offset";
+            $params[':limit'] = (int)$limit;
+            $params[':offset'] = (int)$offset;
+        }
+        
+        $this->db->query($sql);
+
+        foreach ($params as $key => $value) {
+            if ($key === ':limit' || $key === ':offset') {
+                $this->db->bind($key, $value, PDO::PARAM_INT);
+            } else {
+                $this->db->bind($key, $value);
+            }
+        }
+        
         return $this->db->resultSet();
     }
+
+    /**
+     * Menghitung total pengguna berdasarkan filter.
+     *
+     * @param array $filters Filter seperti ['search' => 'keyword', 'role' => 'user']
+     * @return int Jumlah total pengguna
+     */
+    public function countUsers($filters = []) {
+        $sql = "SELECT COUNT(*) as total FROM users u"; // Alias tabel u
+        $params = [];
+        $whereClauses = [];
+
+        if (!empty($filters['search'])) {
+            $whereClauses[] = "(u.full_name LIKE :search OR u.email LIKE :search)";
+            $params[':search'] = "%" . $filters['search'] . "%";
+        }
+
+        if (!empty($filters['role'])) {
+            $whereClauses[] = "u.role = :role";
+            $params[':role'] = $filters['role'];
+        }
+
+        if (!empty($whereClauses)) {
+            $sql .= " WHERE " . implode(" AND ", $whereClauses);
+        }
+
+        $this->db->query($sql);
+
+        foreach ($params as $key => $value) {
+            $this->db->bind($key, $value);
+        }
+        
+        $result = $this->db->single();
+        return $result ? (int)$result->total : 0;
+    }
+
 }
