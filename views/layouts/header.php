@@ -1,60 +1,82 @@
-<?php
-?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= isset($pageTitle) ? $pageTitle . ' - ' . APP_NAME : APP_NAME; ?></title>
-    <!-- Google Fonts - Poppins -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/responsive.css">
-</head>
-<body>
-    <!-- Header -->
-    <header>
-        <div class="container">
-            <nav class="navbar">
-                <a href="<?= APP_URL ?>" class="logo">FSR<span>Hotel</span></a>
-                
-                <div class="menu-toggle">
-                    <i class="fas fa-bars"></i>
-                </div>
-                
-                <ul class="nav-links">
-                    <li><a href="<?= APP_URL ?>" class="<?= (isset($currentPage) && $currentPage == 'home') ? 'active' : ''; ?>">Home</a></li>
-                    <li><a href="<?= APP_URL ?>/rooms" class="<?= (isset($currentPage) && $currentPage == 'rooms') ? 'active' : ''; ?>">Rooms</a></li>
-                    <li><a href="<?= APP_URL ?>/about" class="<?= (isset($currentPage) && $currentPage == 'about') ? 'active' : ''; ?>">About</a></li>
-                    <li><a href="<?= APP_URL ?>/contact" class="<?= (isset($currentPage) && $currentPage == 'contact') ? 'active' : ''; ?>">Contact</a></li>
-                    
-                    <?php if (isset($_SESSION['user_id'])): ?>
-                        <li><a href="<?= APP_URL ?>/profile" class="<?= (isset($currentPage) && $currentPage == 'profile') ? 'active' : ''; ?>">My Account</a></li>
-                        <li><a href="<?= APP_URL ?>/logout" class="btn btn-secondary">Logout</a></li>
-                    <?php else: ?>
-                        <li><a href="<?= APP_URL ?>/login" class="btn btn-secondary">Login</a></li>
-                    <?php endif; ?>
-                </ul>
-            </nav>
-        </div>
-    </header>
+    <title><?php echo $title ?? 'Admin Hotel'; ?> - Hotel Admin Panel</title>
     
-    <!-- Flash messages -->
-    <?php if (isset($_SESSION['flash_message'])): ?>
-        <div class="container mt-2">
-            <div class="alert alert-<?= $_SESSION['flash_type'] ?>">
-                <?= $_SESSION['flash_message']; ?>
+    <!-- CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/admin.css">
+    <!-- Optionally keep user theme for consistency -->
+    <!-- <link href="/assets/css/style.css" rel="stylesheet"> -->
+    
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="<?= APP_URL ?>/assets/js/admin.js" defer></script>
+    
+</head>
+<body class="admin">
+    <!-- Top Navigation -->
+    <nav class="admin-navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-hotel"></i>
+            <span>Hotel Admin</span>
+        </div>
+        
+        <div class="navbar-menu">
+            <div class="navbar-notifications">
+                <div class="notification-item">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge">3</span>
+                </div>
+            </div>
+            
+            <div class="navbar-user">
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="user-info">
+                    <span class="user-name"><?php echo $_SESSION['admin_username'] ?? 'Admin'; ?></span>
+                    <span class="user-role"><?php echo ucfirst($_SESSION['admin_role'] ?? 'admin'); ?></span>
+                </div>
+                <div class="user-dropdown">
+                    <button class="btn btn-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <!-- <li><a class="dropdown-item" href="<?= APP_URL ?>/admin/profile"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a class="dropdown-item" href="<?= APP_URL ?>/admin/settings"><i class="fas fa-cog"></i> Pengaturan</a></li> -->
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="<?= APP_URL ?>/admin/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
-        <?php 
-        // Clear the flash message after displaying
-        unset($_SESSION['flash_message']);
-        unset($_SESSION['flash_type']);
-        ?>
+    </nav>
+    
+    <!-- Alert Messages -->
+    <?php if(isset($_SESSION['success'])): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i>
+            <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
     <?php endif; ?>
     
-    <!-- Main Content -->
-    <main>
+    <?php if(isset($_SESSION['error'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i>
+            <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+    
+    <?php if(isset($error)): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i>
+            <?php echo $error; ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
