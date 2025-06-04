@@ -63,70 +63,159 @@ class AdminRoomController {
 
     // Proses penyimpanan kamar baru ke database
     public function store() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') { // Memastikan form disubmit dengan metode POST
-            $errors = []; // Array untuk menampung pesan error
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $errors = [];
             
-            // Mendapatkan data dari form dan menghindari input kosong
             $room_number = trim($_POST['room_number'] ?? '');
             $category_id = $_POST['category_id'] ?? '';
             $price_per_night = $_POST['price_per_night'] ?? '';
             $capacity = $_POST['capacity'] ?? '';
             $size_sqm = $_POST['size_sqm'] ?? '';
             $description = trim($_POST['description'] ?? '');
-            $status = $_POST['status'] ?? 'available'; // Status default adalah 'available'
+            $status = $_POST['status'] ?? 'available';
+            $selectedFacilities = $_POST['facilities'] ?? [];
 
             // Validasi input form
-            if ($room_number === '') $errors[] = 'Nomor kamar wajib diisi';
-            if ($category_id === '') $errors[] = 'Kategori wajib dipilih';
-            if (!is_numeric($price_per_night) || $price_per_night <= 0) $errors[] = 'Harga tidak valid';
-            if (!is_numeric($capacity) || $capacity <= 0) $errors[] = 'Kapasitas tidak valid';
-            if (!is_numeric($size_sqm) || $size_sqm <= 0) $errors[] = 'Ukuran tidak valid';
+            if (empty($room_number)) $errors[] = 'Nomor kamar wajib diisi';
+            if (empty($category_id)) $errors[] = 'Kategori wajib dipilih';
+            if (!is_numeric($price_per_night) || $price_per_night <= 0) $errors[] = 'Harga tidak valid atau harus lebih besar dari 0';
+            if (!is_numeric($capacity) || $capacity <= 0) $errors[] = 'Kapasitas tidak valid atau harus lebih besar dari 0';
+            if (!is_numeric($size_sqm) || $size_sqm <= 0) $errors[] = 'Ukuran tidak valid atau harus lebih besar dari 0';
+            if (empty($description)) $errors[] = 'Deskripsi wajib diisi.';
+            if (empty($selectedFacilities)) $errors[] = 'Pilih minimal satu fasilitas.';
 
-            // Proses upload gambar
-            $imagePath = null;
-            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-                // Menentukan direktori untuk menyimpan gambar
-                $uploadDir = __DIR__ . '/../uploads/rooms/';
-                if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true); // Membuat direktori jika belum ada
-                // Mendapatkan ekstensi file gambar
-                $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-                // Membuat nama file unik untuk gambar
-                $filename = 'room_' . time() . '_' . rand(1000,9999) . '.' . $ext;
-                $target = $uploadDir . $filename;
-                // Memindahkan gambar yang diupload ke direktori yang telah ditentukan
-                if (move_uploaded_file($_FILES['image']['tmp_name'], $target)) {
-                    $imagePath = 'uploads/rooms/' . $filename;
-                } else {
-                    $errors[] = 'Gagal upload gambar';
+            // Validasi gambar
+            $uploadedImages = [];
+            if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
+                $imageCount = count($_FILES['images']['name']);
+                for ($i = 0; $i < $imageCount; $i++) {
+                    if ($_FILES['images']['error'][$i] === UPLOAD_ERR_OK) {
+                        // Cek ekstensi dan ukuran
+                        $fileName = $_FILES['images']['name'][$i];
+                        $fileTmpName = $_FILES['images']['tmp_name'][$i];
+                        $fileSize = $_FILES['images']['size'][$i];
+                        $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+                        if (!in_array($fileExt, ALLOWED_EXTENSIONS)) {
+                            $errors[] = "Ekstensi file '" . htmlspecialchars($fileName) . "' tidak diizinkan. Hanya: " . implode(', ', ALLOWED_EXTENSIONS);
+                        }
+                        if ($fileSize > MAX_FILE_SIZE) {
+                            $errors[] = "Ukuran file '" . htmlspecialchars($fileName) . "' terlalu besar. Maksimum: " . (MAX_FILE_SIZE / 1024 / 1024) . " MB";
+                        }
+                        $uploadedImages[] = [
+                            'name' => $fileName,
+                            'tmp_name' => $fileTmpName,
+                            'ext' => $fileExt
+                        ];
+                    } elseif ($_FILES['images']['error'][$i] !== UPLOAD_ERR_NO_FILE) {
+                        $errors[] = 'Gagal upload gambar: ' . $_FILES['images']['name'][$i];
+                    }
                 }
+                if (empty($uploadedImages)) { // Jika ada file yang dipilih tapi semua gagal
+                     $errors[] = 'Minimal satu gambar harus berhasil diupload jika Anda memilih file.';
+                }
+            } else {
+                $errors[] = 'Minimal satu gambar wajib diupload.';
             }
 
-            // Jika tidak ada error, simpan data kamar baru ke database
+
             if (empty($errors)) {
-                $roomData = [
-                    'room_number' => $room_number,
-                    'category_id' => $category_id,
-                    'price_per_night' => $price_per_night,
-                    'capacity' => $capacity,
-                    'size_sqm' => $size_sqm,
-                    'description' => $description,
-                    'status' => $status,
-                    'image' => $imagePath // Menyimpan path gambar jika ada
-                ];
-                // Menambahkan kamar baru ke database melalui model
-                if ($this->roomModel->addRoom($roomData)) {
-                    $_SESSION['success'] = 'Kamar berhasil ditambahkan';
-                    header('Location: /admin/rooms');
-                    exit; // Redirect ke halaman daftar kamar setelah berhasil
-                } else {
-                    $errors[] = 'Gagal menambahkan kamar'; // Jika gagal
+                // Tentukan path upload gambar utama (misalnya gambar pertama)
+                $primaryImagePathForRoomTable = null; 
+                $savedImagePaths = [];
+
+                // Proses upload gambar setelah validasi
+                foreach ($uploadedImages as $index => $img) {
+                    // UPLOAD_PATH sudah ada trailing slash dari config.php
+                    $uploadDir = UPLOAD_PATH; // Dari config.php
+                    if (!is_dir($uploadDir)) {
+                        if (!mkdir($uploadDir, 0777, true)) {
+                            $errors[] = "Gagal membuat direktori upload: " . $uploadDir;
+                            // Hentikan proses jika direktori tidak bisa dibuat
+                            break; 
+                        }
+                    }
+                    $newFileName = 'room_' . time() . '_' . uniqid() . '.' . $img['ext'];
+                    $targetPath = $uploadDir . $newFileName;
+                    
+                    if (move_uploaded_file($img['tmp_name'], $targetPath)) {
+                        // Path yang disimpan di DB adalah relatif terhadap root aplikasi atau assets
+                        // Misal: 'assets/images/rooms/namafile.jpg'
+                        $dbImagePath = str_replace(ROOT_PATH . '/', '', $targetPath);
+                        $savedImagePaths[] = [
+                            'path' => $dbImagePath,
+                            'is_primary' => ($index === 0) // Gambar pertama sebagai primary
+                        ];
+                        if ($index === 0) {
+                            $primaryImagePathForRoomTable = $dbImagePath;
+                        }
+                    } else {
+                        $errors[] = 'Gagal memindahkan file gambar: ' . htmlspecialchars($img['name']);
+                    }
+                }
+                
+                // Lanjutkan hanya jika tidak ada error saat pemindahan file
+                if (empty($errors)) {
+                    $roomData = [
+                        'room_number' => $room_number,
+                        'category_id' => $category_id,
+                        'price_per_night' => $price_per_night,
+                        'capacity' => $capacity,
+                        'size_sqm' => $size_sqm,
+                        'description' => $description,
+                        'status' => $status,
+                        'primary_image_path' => $primaryImagePathForRoomTable // Untuk kolom image_url di tabel rooms
+                    ];
+
+                    $newRoomId = $this->roomModel->addRoom($roomData);
+
+                    if ($newRoomId) {
+                        // Simpan fasilitas
+                        if (!empty($selectedFacilities)) {
+                            if (!$this->roomModel->addRoomFacilities($newRoomId, $selectedFacilities)) {
+                                $errors[] = 'Gagal menyimpan fasilitas kamar.';
+                                // Pertimbangkan untuk menghapus kamar yang baru dibuat jika fasilitas gagal
+                                // $this->roomModel->deleteRoom($newRoomId); // Perlu metode deleteRoom
+                            }
+                        }
+
+                        // Simpan gambar ke tabel room_images
+                        foreach ($savedImagePaths as $imgPathData) {
+                            if (!$this->roomModel->addRoomImage($newRoomId, $imgPathData['path'], $imgPathData['is_primary'])) {
+                                $errors[] = 'Gagal menyimpan detail gambar: ' . htmlspecialchars($imgPathData['path']);
+                            }
+                        }
+                        
+                        // Jika masih ada error setelah mencoba simpan fasilitas/gambar
+                        if (!empty($errors)) {
+                             // Muat ulang data untuk form
+                            $categories = $this->roomModel->getAllCategories();
+                            $facilities = $this->roomModel->getAllFacilities();
+                            // Hapus kamar yang mungkin sudah terbuat jika ada error signifikan
+                            if ($newRoomId) $this->roomModel->deleteRoom($newRoomId); // Hapus kamar jika ada error lanjut
+                            require VIEW_PATH . 'admin/rooms/create.php';
+                        } else {
+                            $_SESSION['success'] = 'Kamar berhasil ditambahkan';
+                            header('Location: ' . base_url('admin/rooms')); // Gunakan helper base_url
+                            exit;
+                        }
+
+                    } else {
+                        $errors[] = 'Gagal menambahkan kamar ke database.';
+                    }
                 }
             }
 
-            // Jika ada error, ambil kategori dan fasilitas untuk ditampilkan lagi di form
-            $categories = $this->roomModel->getAllCategories();
-            $facilities = $this->roomModel->getAllFacilities();            
-            require __DIR__ . '/../views/admin/rooms/create.php'; // Kembali ke form tambah kamar dengan error
+            // Jika ada error validasi awal atau error saat upload/simpan
+            if (!empty($errors)) {
+                $categories = $this->roomModel->getAllCategories();
+                $facilities = $this->roomModel->getAllFacilities();            
+                require VIEW_PATH . 'admin/rooms/create.php'; // Gunakan VIEW_PATH
+            }
+        } else {
+            // Jika bukan POST, redirect atau tampilkan error
+            header('Location: ' . base_url('admin/rooms/create'));
+            exit;
         }
     }
     
