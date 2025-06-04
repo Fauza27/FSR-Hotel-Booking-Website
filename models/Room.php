@@ -334,13 +334,17 @@ class Room {
     public function getRoomsPaginated($limit = 10, $offset = 0, $search = '', $category = null) {
         try {
             // Menyusun query untuk mengambil kamar dengan pagination
-            $sql = "SELECT r.*, c.name as category_name 
+            // Tambahkan LEFT JOIN ke room_images untuk mendapatkan primary_image_url
+            $sql = "SELECT r.*, 
+                           c.name as category_name, 
+                           ri.image_url as primary_image_url 
                     FROM rooms r 
                     INNER JOIN room_categories c ON r.category_id = c.category_id 
+                    LEFT JOIN room_images ri ON r.room_id = ri.room_id AND ri.is_primary = 1
                     WHERE 1=1";
+            
             $params = [];
             
-            // Menambahkan filter pencarian
             if (!empty($search)) {
                 $sql .= " AND (r.room_number LIKE :search 
                               OR r.description LIKE :search 
@@ -348,31 +352,24 @@ class Room {
                 $params[':search'] = "%$search%";
             }
             
-            // Menambahkan filter kategori
             if (!empty($category)) {
                 $sql .= " AND r.category_id = :category_id";
                 $params[':category_id'] = (int)$category;
             }
             
-            // Menambahkan limit dan offset untuk pagination
             $sql .= " ORDER BY r.room_number ASC LIMIT :limit OFFSET :offset";
             
-            // Menjalankan query
             $this->db->query($sql);
             
-            // Mengikat semua parameter yang digunakan dalam query
             foreach ($params as $param => $value) {
                 $this->db->bind($param, $value);
             }
             
-            // Mengikat parameter limit dan offset
-            $this->db->bind(':limit', (int)$limit);
-            $this->db->bind(':offset', (int)$offset);
+            $this->db->bind(':limit', (int)$limit, PDO::PARAM_INT);
+            $this->db->bind(':offset', (int)$offset, PDO::PARAM_INT);
             
-            // Mengembalikan hasil query sebagai daftar kamar yang dipaginasi
             return $this->db->resultSet();
         } catch (Exception $e) {
-            // Menangani error jika terjadi kesalahan dalam query
             error_log("Error in getRoomsPaginated: " . $e->getMessage());
             return [];
         }
