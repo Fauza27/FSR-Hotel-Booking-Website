@@ -135,6 +135,7 @@ $routes = [
     'register' => ['AuthController', 'register'],
     'logout' => ['AuthController', 'logout'],
     'forgot-password' => ['AuthController', 'forgotPassword'],
+    'reset-password' => ['AuthController', 'resetPassword'],
     
     // Home routes
     '' => ['HomeController', 'index'],
