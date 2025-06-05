@@ -21,6 +21,7 @@
   --admin-warning: #ffc107;
   --admin-info: #2196f3;
   --admin-shadow: rgba(0, 0, 0, 0.3);
+  --admin-navbar-height: 60px;
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -193,12 +194,19 @@ body.admin {
 }
 
 .admin-sidebar {
-  width: 250px;
-  background: var(--admin-primary);
+  width: 280px; /* Lebar sidebar */
+  background: var(--admin-bg-dark); /* Pindahkan style dari .sidebar lama ke sini */
   color: var(--admin-light);
-  min-height: 100vh;
+  position: fixed;
+  top: var(--admin-navbar-height); /* Di bawah navbar */
+  left: 0;
+  bottom: 0; /* Mengisi sisa tinggi viewport */
+  z-index: 1000; /* Di bawah navbar, di atas konten */
+  border-right: 1px solid var(--admin-dark);
   box-shadow: 2px 0 8px var(--admin-shadow);
-  padding: 2rem 1rem 1rem 1rem;
+  display: flex;
+  flex-direction: column; /* Untuk mengatur .sidebar-header dan .sidebar-nav */
+  /* Hapus padding dari .admin-sidebar, akan di-handle oleh children */
 }
 
 .admin-sidebar a {
@@ -691,9 +699,10 @@ body.admin {
 }
 
 .sidebar-header {
-  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg) var(--spacing-lg) 0 var(--spacing-lg); /* Atas, Kiri, Kanan */
+  margin-bottom: var(--spacing-sm); /* Jarak ke nav-list */
   text-align: center;
-  padding: 0 var(--spacing-lg);
+  flex-shrink: 0; /* Header tidak akan mengecil atau scroll */
 }
 
 .sidebar-header h4 {
@@ -703,6 +712,7 @@ body.admin {
   letter-spacing: 1px;
   position: relative;
   padding-bottom: var(--spacing-sm);
+  margin: 0;
 }
 
 .sidebar-header h4:after {
@@ -716,6 +726,13 @@ body.admin {
   background: var(--admin-accent);
 }
 
+/* Navigasi di dalam sidebar */
+.sidebar-nav {
+  flex-grow: 1; /* Mengambil sisa ruang vertikal di .admin-sidebar */
+  overflow-y: auto; /* INI KUNCI untuk membuat sidebar scrollable */
+  padding: 0 var(--spacing-sm) var(--spacing-lg) var(--spacing-sm); /* Padding internal, terutama bawah */
+}
+
 .sidebar-nav .nav-list {
   list-style: none;
   padding: 0;
@@ -723,7 +740,7 @@ body.admin {
 }
 
 .nav-item {
-  padding: 0 var(--spacing-sm);
+  padding: 0 var(--spacing-sm); /* Sesuaikan dengan desain Anda */
   margin-bottom: var(--spacing-xs);
 }
 
@@ -841,19 +858,24 @@ footer {
 }
 
 @media (max-width: 768px) {
-  .admin-sidebar {
-    width: 100%;
-    height: auto;
-    min-height: unset;
-    position: relative;
-    border-right: none;
-    border-bottom: 1px solid var(--admin-dark);
-    padding: var(--spacing-md);
+  .admin-container {
+    flex-direction: column; /* Sidebar dan konten akan bertumpuk */
+    padding-top: var(--admin-navbar-height); /* Tetap beri ruang untuk navbar fixed */
   }
 
-  .admin-main-content {
-    margin-left: 0;
-    padding: var(--spacing-md);
+  .admin-sidebar {
+    /* Sidebar menjadi bagian dari flow normal lagi */
+    position: relative; /* Tidak lagi fixed */
+    width: 100%;
+    top: auto; /* Reset posisi fixed */
+    left: auto;
+    bottom: auto;
+    height: auto; /* Tinggi ditentukan oleh kontennya */
+    min-height: unset;
+    z-index: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--admin-dark); /* Garis pemisah di bawah sidebar */
+    /* flex-direction: column; masih relevan */
   }
 }
 @media (max-width: 768px) {
@@ -1096,11 +1118,10 @@ select.form-control {
 }
 
 .admin-content {
+  /* Elemen pembungkus konten di dashboard/index.php */
+  flex-grow: 1; /* Mengisi sisa lebar jika .admin-container adalah flex */
+  margin-left: 280px; /* Memberi ruang untuk sidebar yang fixed */
+  padding: var(--spacing-xl);
   background: var(--admin-bg);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
-  box-shadow: 0 0 20px var(--admin-shadow);
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+  min-height: calc(100vh - var(--admin-navbar-height)); /* Mengisi tinggi viewport di bawah navbar */
 }
