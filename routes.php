@@ -201,6 +201,7 @@ $routes = [
     // Admin category management
     'admin/categories' => ['AdminCategoryController', 'index'],
     'admin/categories/create' => ['AdminCategoryController', 'create'],
+    'admin/categories/store' => ['AdminCategoryController', 'store'],
     'admin/categories/edit/(\d+)' => ['AdminCategoryController', 'edit'],
     'admin/categories/update/(\d+)' => ['AdminCategoryController', 'update'],
     'admin/categories/delete/(\d+)' => ['AdminCategoryController', 'delete'],
