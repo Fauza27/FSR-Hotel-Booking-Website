@@ -49,7 +49,7 @@
                         <!-- <li><a class="dropdown-item" href="<?= APP_URL ?>/admin/profile"><i class="fas fa-user"></i> Profile</a></li>
                         <li><a class="dropdown-item" href="<?= APP_URL ?>/admin/settings"><i class="fas fa-cog"></i> Pengaturan</a></li> -->
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="<?= APP_URL ?>/admin/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        <li><a class="dropdown-item" href="<?= APP_URL ?>/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                     </ul>
                 </div>
             </div>
